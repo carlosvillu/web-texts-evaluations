@@ -74,10 +74,10 @@
 
 ### 2.1 Utilidades Base
 
-- [ ] **2.1.1** Crear `src/utils/formatters.ts`
+- [x] **2.1.1** Crear `src/utils/formatters.ts`
   - Formateo de números, fechas, tiempos
   - Formateo de métricas (ICC, desviaciones)
-- [ ] **2.1.2** Crear `src/utils/validators.ts`
+- [x] **2.1.2** Crear `src/utils/validators.ts`
   - Validación de URLs de endpoint
   - Validación de estructura CSV
   - Validación de datos de entrada
@@ -86,43 +86,43 @@
 
 ### 2.2 Hooks Personalizados
 
-- [ ] **2.2.1** Crear `src/hooks/useLocalStorage.ts`
+- [x] **2.2.1** Crear `src/hooks/useLocalStorage.ts`
   - Hook para persistencia en localStorage
   - Manejo de serialización/deserialización
-- [ ] **2.2.2** Crear `src/hooks/useSSE.ts`
+- [x] **2.2.2** Crear `src/hooks/useSSE.ts`
   - Hook para manejo de Server-Sent Events
   - Gestión de conexión, reconexión, errores
   - Event listeners para 'batch_complete' y 'complete'
-- [ ] **2.2.3** Crear `src/hooks/useVirtualTable.ts`
+- [x] **2.2.3** Crear `src/hooks/useVirtualTable.ts`
   - Hook para configuración de tabla virtual
   - Manejo de scroll, paginación virtual
 
 ### 2.3 Servicios Core
 
-- [ ] **2.3.1** Crear `src/services/api.ts`
+- [x] **2.3.1** Crear `src/services/api.ts`
   - Cliente API para comunicación con backend
   - Funciones para iniciar procesamiento
   - Manejo de errores HTTP
-- [ ] **2.3.2** Crear `src/services/csvParser.ts`
+- [x] **2.3.2** Crear `src/services/csvParser.ts`
   - Parsing de CSV con Papaparse
   - Mapeo de columnas requeridas
   - Validación de estructura de datos
-- [ ] **2.3.3** Crear `src/services/metrics.ts`
+- [x] **2.3.3** Crear `src/services/metrics.ts`
   - Implementación de cálculo ICC(3,1)
   - Cálculo de medianas por fila
   - Cálculo de desviaciones y estadísticas
 
 ### 2.4 Implementaciones Críticas
 
-- [ ] **2.4.1** Función calculateICC31() completa
+- [x] **2.4.1** Función calculateICC31() completa
   ```javascript
   function calculateICC31(modelScores, humanMedians) {
     // Implementación ICC(3,1) - Single rater, consistency
     // Basado en modelo de efectos mixtos de dos vías
   }
   ```
-- [ ] **2.4.2** Función calculateMedian() para evaluaciones humanas
-- [ ] **2.4.3** Función de mapeo CSV → API format
+- [x] **2.4.2** Función calculateMedian() para evaluaciones humanas
+- [x] **2.4.3** Función de mapeo CSV → API format
 
 **Criterios de Aceptación Fase 2:**
 
