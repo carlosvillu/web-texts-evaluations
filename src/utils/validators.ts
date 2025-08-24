@@ -19,6 +19,11 @@ export const isValidUrl = (url: string): boolean => {
 };
 
 /**
+ * Alias para compatibilidad
+ */
+export const validateUrl = isValidUrl;
+
+/**
  * Valida si una URL es un endpoint HTTP válido
  */
 export const isValidHttpEndpoint = (url: string): boolean => {

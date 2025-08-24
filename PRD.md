@@ -150,7 +150,7 @@
 
 ### 3.2 ConfigurationSection Component
 
-- [ ] **3.2.1** Crear `src/components/ConfigurationSection.tsx`
+- [x] **3.2.1** Crear `src/components/ConfigurationSection.tsx`
   ```typescript
   interface ConfigProps {
     endpointUrl: string;
@@ -158,44 +158,44 @@
     onConfigChange: (config) => void;
   }
   ```
-- [ ] **3.2.2** Implementar persistencia en localStorage
-- [ ] **3.2.3** Indicador visual de conexión válida
-- [ ] **3.2.4** Validación de URL en tiempo real
-- [ ] **3.2.5** Selector de separador CSV (;, ,, |)
+- [x] **3.2.2** Implementar persistencia en localStorage
+- [x] **3.2.3** Indicador visual de conexión válida
+- [x] **3.2.4** Validación de URL en tiempo real
+- [x] **3.2.5** Selector de separador CSV (;, ,, |)
 
 ### 3.3 FileUploadSection Component
 
-- [ ] **3.3.1** Crear `src/components/FileUploadSection.tsx`
-- [ ] **3.3.2** Implementar drag & drop área
-- [ ] **3.3.3** Integrar con csvParser service
-- [ ] **3.3.4** Preview de primeras 5 filas cargadas
-- [ ] **3.3.5** Validación de columnas requeridas:
+- [x] **3.3.1** Crear `src/components/FileUploadSection.tsx`
+- [x] **3.3.2** Implementar drag & drop área
+- [x] **3.3.3** Integrar con csvParser service
+- [x] **3.3.4** Preview de primeras 5 filas cargadas
+- [x] **3.3.5** Validación de columnas requeridas:
   - id_participante, respuesta, curso, pregunta
   - evaluacion_1, evaluacion_2?, evaluacion_3?
-- [ ] **3.3.6** Manejo de errores de parsing
+- [x] **3.3.6** Manejo de errores de parsing
 
 ### 3.4 VirtualTable Component
 
-- [ ] **3.4.1** Crear `src/components/VirtualTable.tsx`
-- [ ] **3.4.2** Configurar @tanstack/react-virtual
-- [ ] **3.4.3** Configurar @tanstack/react-table
-- [ ] **3.4.4** Implementar renderizado de 3000+ filas
-- [ ] **3.4.5** Configurar columnas dinámicas
-- [ ] **3.4.6** Scroll horizontal y vertical
-- [ ] **3.4.7** Altura fija de 400px
+- [x] **3.4.1** Crear `src/components/VirtualTable.tsx`
+- [x] **3.4.2** Configurar @tanstack/react-virtual
+- [x] **3.4.3** Configurar @tanstack/react-table
+- [x] **3.4.4** Implementar renderizado de 3000+ filas
+- [x] **3.4.5** Configurar columnas dinámicas
+- [x] **3.4.6** Scroll horizontal y vertical
+- [x] **3.4.7** Altura fija de 400px
 
 ### 3.5 Componentes Adicionales
 
-- [ ] **3.5.1** Crear `src/components/ProcessingController.tsx`
+- [x] **3.5.1** Crear `src/components/ProcessingController.tsx`
   - Estado de procesamiento (idle, processing, completed, error)
   - Botón de inicio/parada
   - Manejo de jobId
-- [ ] **3.5.2** Crear `src/components/MetricsPanel.tsx`
+- [x] **3.5.2** Crear `src/components/MetricsPanel.tsx`
   - Display de ICC(3,1) con interpretación
   - Display de desviación media y estándar
   - Contador de procesados vs total
   - Badge de fiabilidad (reliable/unreliable)
-- [ ] **3.5.3** Crear `src/components/ResultsExporter.tsx`
+- [x] **3.5.3** Crear `src/components/ResultsExporter.tsx`
   - Botón de descarga CSV
   - Generación de CSV enriquecido
   - Progress de descarga
