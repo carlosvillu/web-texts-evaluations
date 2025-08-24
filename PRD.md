@@ -18,34 +18,34 @@
 
 ### 1.1 Inicialización del Proyecto
 
-- [ ] **1.1.1** Crear proyecto Vite con template React
+- [x] **1.1.1** Crear proyecto Vite con template React
   ```bash
   npm create vite@latest text-evaluation-web -- --template react
   ```
-- [ ] **1.1.2** Configurar package.json con dependencias principales
+- [x] **1.1.2** Configurar package.json con dependencias principales
   - React 18.2.0+, React-DOM 18.2.0+
   - Papaparse 5.4.1+, @tanstack/react-virtual 3.0.0+, @tanstack/react-table 8.11.0+
-- [ ] **1.1.3** Instalar y configurar Tailwind CSS
+- [x] **1.1.3** Instalar y configurar Tailwind CSS
   ```bash
   npm install -D tailwindcss postcss autoprefixer
   npx tailwindcss init -p
   ```
-- [ ] **1.1.4** Configurar shadcn/ui
+- [x] **1.1.4** Configurar shadcn/ui
   ```bash
-  npx shadcn-ui@latest init
-  npx shadcn-ui@latest add button card input progress alert badge tabs
+  npx shadcn@latest init
+  npx shadcn@latest add button card input progress alert badge tabs
   ```
 
 ### 1.2 Configuración del Entorno
 
-- [ ] **1.2.1** Configurar vite.config.js con aliases (@)
-- [ ] **1.2.2** Configurar tailwind.config.js con tema personalizado
-- [ ] **1.2.3** Configurar postcss.config.js
-- [ ] **1.2.4** Crear .env.example con variables de entorno
+- [x] **1.2.1** Configurar vite.config.js con aliases (@)
+- [x] **1.2.2** Configurar tailwind.config.js con tema personalizado
+- [x] **1.2.3** Configurar postcss.config.js
+- [x] **1.2.4** Crear .env.example con variables de entorno
 
 ### 1.3 Estructura de Carpetas
 
-- [ ] **1.3.1** Crear estructura base de carpetas:
+- [x] **1.3.1** Crear estructura base de carpetas:
   ```
   src/
   ├── components/
@@ -56,7 +56,7 @@
   ├── utils/
   └── lib/
   ```
-- [ ] **1.3.2** Crear archivos de entrada básicos (main.jsx, App.jsx, index.css)
+- [x] **1.3.2** Crear archivos de entrada básicos (main.jsx, App.jsx, index.css)
 
 **Criterios de Aceptación Fase 1:**
 
