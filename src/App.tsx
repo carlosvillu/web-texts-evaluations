@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import type { AppState } from '@/types/app'
 
 function App() {
-  const [_appState, _setAppState] = useState({
+  const [_appState, _setAppState] = useState<AppState>({
     config: {
       endpoint: localStorage.getItem("endpoint") || "",
       separator: localStorage.getItem("separator") || ";",
