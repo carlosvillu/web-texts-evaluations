@@ -1,4 +1,5 @@
 # Product Requirements Document (PRD)
+
 ## Web SPA para Evaluación Automatizada de Textos Educativos
 
 ### 1. Resumen Ejecutivo
@@ -6,15 +7,17 @@
 **Proyecto**: Aplicación Web SPA para consumo de API de Evaluación de Textos  
 **Versión**: 1.0 - Prueba de Concepto  
 **Fecha**: Diciembre 2024  
-**Stack Tecnológico**: React + Vite + Tailwind CSS + shadcn/ui  
+**Stack Tecnológico**: React + Vite + Tailwind CSS v3 + shadcn/ui  
 **Propósito**: Interfaz para procesar CSVs masivos de textos educativos y visualizar evaluaciones automáticas con métricas de fiabilidad
 
 ### 2. Objetivos del Proyecto
 
 #### 2.1 Objetivo Principal
+
 Crear una interfaz web elegante y simple que permita cargar CSVs con respuestas de estudiantes, procesarlas mediante la API de evaluación, y analizar la fiabilidad del modelo comparando con evaluaciones humanas existentes.
 
 #### 2.2 Objetivos Específicos
+
 - Cargar y visualizar CSVs de hasta 3000+ filas eficientemente
 - Procesar textos mediante SSE con feedback en tiempo real
 - Calcular métricas de fiabilidad (ICC) dinámicamente
@@ -40,16 +43,16 @@ graph TD
 
 #### 3.2 Funcionalidades Core
 
-| Funcionalidad | Descripción | Prioridad |
-|--------------|-------------|-----------|
-| Configuración Endpoint | Input persistente en localStorage | Alta |
-| Carga CSV | Drag & drop o selector de archivo | Alta |
-| Tabla Virtual | Renderizado eficiente de miles de filas | Alta |
-| Procesamiento SSE | Streaming de resultados en tiempo real | Alta |
-| Métricas Dinámicas | ICC(3,1) y desviación vs mediana | Alta |
-| Barra de Progreso | Visual del avance y tiempo restante | Alta |
-| Exportar Resultados | Descarga CSV con evaluaciones | Alta |
-| Diseño Responsive | Adaptable a diferentes pantallas | Media |
+| Funcionalidad          | Descripción                             | Prioridad |
+| ---------------------- | --------------------------------------- | --------- |
+| Configuración Endpoint | Input persistente en localStorage       | Alta      |
+| Carga CSV              | Drag & drop o selector de archivo       | Alta      |
+| Tabla Virtual          | Renderizado eficiente de miles de filas | Alta      |
+| Procesamiento SSE      | Streaming de resultados en tiempo real  | Alta      |
+| Métricas Dinámicas     | ICC(3,1) y desviación vs mediana        | Alta      |
+| Barra de Progreso      | Visual del avance y tiempo restante     | Alta      |
+| Exportar Resultados    | Descarga CSV con evaluaciones           | Alta      |
+| Diseño Responsive      | Adaptable a diferentes pantallas        | Media     |
 
 ### 4. Arquitectura de la Aplicación
 
@@ -95,20 +98,23 @@ graph TD
 ### 5. Especificación de Componentes
 
 #### 5.1 ConfigurationSection
+
 ```typescript
 interface ConfigProps {
-  endpointUrl: string;        // Persistido en localStorage
-  csvSeparator: string;       // Default: ';'
+  endpointUrl: string; // Persistido en localStorage
+  csvSeparator: string; // Default: ';'
   onConfigChange: (config) => void;
 }
 ```
 
 **Características**:
+
 - Input con valor inicial desde localStorage
 - Botón "Guardar" para persistir cambios
 - Indicador visual de conexión válida
 
 #### 5.2 FileUploadSection
+
 ```typescript
 interface FileUploadProps {
   separator: string;
@@ -127,12 +133,14 @@ interface ParsedData {
 ```
 
 **Características**:
+
 - Drag & drop área
 - Parsing con Papaparse
 - Validación de columnas requeridas
 - Preview de primeras filas
 
 #### 5.3 VirtualTable (Input & Results)
+
 ```typescript
 interface VirtualTableProps {
   data: any[];
@@ -143,14 +151,16 @@ interface VirtualTableProps {
 ```
 
 **Librerías sugeridas**:
+
 - `@tanstack/react-virtual` para virtualización
 - `@tanstack/react-table` para funcionalidad de tabla
 
 #### 5.4 ProcessingController
+
 ```typescript
 interface ProcessingState {
   jobId: string | null;
-  status: 'idle' | 'processing' | 'completed' | 'error';
+  status: "idle" | "processing" | "completed" | "error";
   progress: {
     completed: number;
     total: number;
@@ -162,10 +172,11 @@ interface ProcessingState {
 ```
 
 **SSE Handler**:
+
 ```javascript
 const eventSource = new EventSource(`${endpoint}/stream/${jobId}`);
 
-eventSource.addEventListener('batch_complete', (event) => {
+eventSource.addEventListener("batch_complete", (event) => {
   const data = JSON.parse(event.data);
   updateResults(data.results);
   updateMetrics(data.results);
@@ -174,29 +185,31 @@ eventSource.addEventListener('batch_complete', (event) => {
 ```
 
 #### 5.5 MetricsPanel
+
 ```typescript
 interface Metrics {
-  icc: number;                // ICC(3,1)
-  iccInterpretation: string;  // "Poor" | "Fair" | "Good" | "Excellent"
-  meanDeviation: number;      // Desviación promedio modelo vs mediana
-  stdDeviation: number;       // Desviación estándar
-  processedCount: number;     // Textos procesados
-  reliabilityStatus: 'reliable' | 'unreliable'; // ICC > 0.8
+  icc: number; // ICC(3,1)
+  iccInterpretation: string; // "Poor" | "Fair" | "Good" | "Excellent"
+  meanDeviation: number; // Desviación promedio modelo vs mediana
+  stdDeviation: number; // Desviación estándar
+  processedCount: number; // Textos procesados
+  reliabilityStatus: "reliable" | "unreliable"; // ICC > 0.8
 }
 ```
 
 **Cálculo ICC(3,1)**:
+
 ```javascript
 function calculateICC31(modelScores, humanMedians) {
   // ICC(3,1): Single rater, consistency
   // Implementación usando varianzas
   const n = modelScores.length;
   const pairs = modelScores.map((m, i) => [m, humanMedians[i]]);
-  
+
   // Cálculo de componentes de varianza
-  const MSR = calculateMSR(pairs);  // Mean Square Rows
-  const MSE = calculateMSE(pairs);  // Mean Square Error
-  
+  const MSR = calculateMSR(pairs); // Mean Square Rows
+  const MSE = calculateMSE(pairs); // Mean Square Error
+
   const icc = (MSR - MSE) / (MSR + MSE);
   return icc;
 }
@@ -251,6 +264,7 @@ text-evaluation-web/
 ### 7. Diseño de Interfaz
 
 #### 7.1 Layout Principal
+
 ```
 ┌──────────────────────────────────────────────┐
 │  📊 Evaluador de Textos Educativos          │
@@ -291,17 +305,12 @@ text-evaluation-web/
 ```
 
 #### 7.2 Paleta de Colores (Tailwind)
+
 ```css
 /* Tema claro y profesional */
---primary: blue-600
---secondary: slate-600
---success: green-600
---warning: amber-600
---danger: red-600
---background: white
---surface: gray-50
---text: gray-900
---border: gray-200
+--primary: blue-600 --secondary: slate-600 --success: green-600
+  --warning: amber-600 --danger: red-600 --background: white --surface: gray-50
+  --text: gray-900 --border: gray-200;
 ```
 
 ### 8. Flujo de Datos
@@ -312,20 +321,18 @@ const mapToAPIFormat = (csvRow) => ({
   id_alumno: csvRow.id_participante,
   curso: csvRow.curso,
   consigna: csvRow.pregunta,
-  respuesta: csvRow.respuesta
+  respuesta: csvRow.respuesta,
 });
 
 // 2. Cálculo de mediana por fila
 const calculateMedian = (row) => {
-  const scores = [
-    row.evaluacion_1,
-    row.evaluacion_2,
-    row.evaluacion_3
-  ].filter(v => v !== null && v !== undefined && v !== '');
-  
+  const scores = [row.evaluacion_1, row.evaluacion_2, row.evaluacion_3].filter(
+    (v) => v !== null && v !== undefined && v !== "",
+  );
+
   scores.sort((a, b) => a - b);
   const mid = Math.floor(scores.length / 2);
-  
+
   return scores.length % 2 !== 0
     ? scores[mid]
     : (scores[mid - 1] + scores[mid]) / 2;
@@ -336,7 +343,7 @@ const enrichedResult = {
   ...originalRow,
   evaluacion_modelo: apiResult.nota,
   mediana_humana: calculateMedian(originalRow),
-  desviacion: Math.abs(apiResult.nota - calculateMedian(originalRow))
+  desviacion: Math.abs(apiResult.nota - calculateMedian(originalRow)),
 };
 ```
 
@@ -346,25 +353,25 @@ const enrichedResult = {
 // Estado principal de la aplicación
 const [appState, setAppState] = useState({
   config: {
-    endpoint: localStorage.getItem('endpoint') || '',
-    separator: localStorage.getItem('separator') || ';'
+    endpoint: localStorage.getItem("endpoint") || "",
+    separator: localStorage.getItem("separator") || ";",
   },
   data: {
-    original: [],      // Datos CSV cargados
-    results: [],       // Resultados del modelo
-    merged: []         // Datos combinados
+    original: [], // Datos CSV cargados
+    results: [], // Resultados del modelo
+    merged: [], // Datos combinados
   },
   processing: {
     isActive: false,
     jobId: null,
     progress: 0,
-    timeRemaining: null
+    timeRemaining: null,
   },
   metrics: {
     icc: null,
     meanDeviation: null,
-    reliabilityMet: false
-  }
+    reliabilityMet: false,
+  },
 });
 ```
 
@@ -374,16 +381,16 @@ const [appState, setAppState] = useState({
 // Wrapper para manejo global de errores
 const handleError = (error, context) => {
   console.error(`Error in ${context}:`, error);
-  
+
   // Mostrar alert simple con error raw
   alert(`Error: ${error.message || error}`);
-  
+
   // Reset estado si es necesario
-  if (context === 'processing') {
-    setProcessingState(prev => ({
+  if (context === "processing") {
+    setProcessingState((prev) => ({
       ...prev,
       isActive: false,
-      status: 'error'
+      status: "error",
     }));
   }
 };
@@ -393,71 +400,71 @@ try {
   const response = await fetch(`${endpoint}/evaluate`, options);
   if (!response.ok) throw new Error(response.statusText);
 } catch (error) {
-  handleError(error, 'api-call');
+  handleError(error, "api-call");
 }
 ```
 
 ### 11. Implementación de Componentes Clave
 
 #### 11.1 Hook useSSE
+
 ```javascript
 const useSSE = (url, onMessage, onError, onComplete) => {
   useEffect(() => {
     if (!url) return;
-    
+
     const eventSource = new EventSource(url);
-    
-    eventSource.addEventListener('batch_complete', (e) => {
+
+    eventSource.addEventListener("batch_complete", (e) => {
       const data = JSON.parse(e.data);
       onMessage(data);
     });
-    
-    eventSource.addEventListener('complete', (e) => {
+
+    eventSource.addEventListener("complete", (e) => {
       const data = JSON.parse(e.data);
       onComplete(data);
       eventSource.close();
     });
-    
+
     eventSource.onerror = (error) => {
       onError(error);
       eventSource.close();
     };
-    
+
     return () => eventSource.close();
   }, [url]);
 };
 ```
 
 #### 11.2 MetricsPanel Component
+
 ```jsx
 const MetricsPanel = ({ results, originalData }) => {
   const metrics = useMemo(() => {
     if (results.length === 0) return null;
-    
-    const modelScores = results.map(r => r.nota);
-    const humanMedians = results.map(r => {
+
+    const modelScores = results.map((r) => r.nota);
+    const humanMedians = results.map((r) => {
       const original = originalData.find(
-        o => o.id_participante === r.id_alumno
+        (o) => o.id_participante === r.id_alumno,
       );
       return calculateMedian(original);
     });
-    
+
     const icc = calculateICC31(modelScores, humanMedians);
-    const deviations = modelScores.map((m, i) => 
-      Math.abs(m - humanMedians[i])
-    );
-    
+    const deviations = modelScores.map((m, i) => Math.abs(m - humanMedians[i]));
+
     return {
       icc: icc.toFixed(3),
       iccStatus: getICCInterpretation(icc),
       meanDeviation: mean(deviations).toFixed(2),
       stdDeviation: std(deviations).toFixed(2),
-      isReliable: icc > 0.8
+      isReliable: icc > 0.8,
     };
   }, [results, originalData]);
-  
+
   if (!metrics) return null;
-  
+
   return (
     <Card className="p-4">
       <CardHeader>
@@ -467,7 +474,7 @@ const MetricsPanel = ({ results, originalData }) => {
         <div className="space-y-2">
           <div className="flex justify-between">
             <span>ICC(3,1):</span>
-            <Badge variant={metrics.isReliable ? 'success' : 'warning'}>
+            <Badge variant={metrics.isReliable ? "success" : "warning"}>
               {metrics.icc} - {metrics.iccStatus}
             </Badge>
           </div>
@@ -477,7 +484,9 @@ const MetricsPanel = ({ results, originalData }) => {
           </div>
           <div className="flex justify-between">
             <span>Procesados:</span>
-            <span>{results.length}/{originalData.length}</span>
+            <span>
+              {results.length}/{originalData.length}
+            </span>
           </div>
         </div>
       </CardContent>
@@ -489,6 +498,7 @@ const MetricsPanel = ({ results, originalData }) => {
 ### 12. Scripts de Instalación
 
 #### package.json
+
 ```json
 {
   "name": "text-evaluation-web",
@@ -529,22 +539,22 @@ const MetricsPanel = ({ results, originalData }) => {
 
 ```javascript
 // vite.config.js
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
   server: {
     port: 3000,
-    open: true
-  }
-})
+    open: true,
+  },
+});
 ```
 
 ### 14. Instrucciones de Despliegue
@@ -575,12 +585,14 @@ npm run preview
 ### 15. Consideraciones de Performance
 
 #### 15.1 Optimizaciones
+
 - **Virtualización**: Tablas con react-virtual para manejar 3000+ filas
 - **Memoización**: useMemo para cálculos pesados (ICC, medianas)
 - **Debouncing**: En actualizaciones de métricas (cada 500ms máximo)
 - **Lazy loading**: Componentes pesados solo cuando son necesarios
 
 #### 15.2 Límites
+
 - **Tamaño máximo CSV**: 50MB (configurable)
 - **Filas máximas**: 3000 (límite suave, puede procesar más)
 - **Batch size SSE**: 10 items (definido por la API)
@@ -599,32 +611,35 @@ npm run preview
 
 ### 17. Métricas de Éxito del PoC
 
-| Métrica | Objetivo | Crítico |
-|---------|----------|---------|
-| Tiempo carga CSV 3000 filas | < 2 seg | < 5 seg |
-| Renderizado tabla virtual | 60 FPS | 30 FPS |
-| Consumo memoria con 3000 filas | < 200MB | < 500MB |
-| Actualización métricas | < 100ms | < 500ms |
-| Tasa de error en SSE | < 1% | < 5% |
-| Compatibilidad navegadores | Chrome, Firefox, Safari últimas 2 versiones | Chrome última versión |
+| Métrica                        | Objetivo                                    | Crítico               |
+| ------------------------------ | ------------------------------------------- | --------------------- |
+| Tiempo carga CSV 3000 filas    | < 2 seg                                     | < 5 seg               |
+| Renderizado tabla virtual      | 60 FPS                                      | 30 FPS                |
+| Consumo memoria con 3000 filas | < 200MB                                     | < 500MB               |
+| Actualización métricas         | < 100ms                                     | < 500ms               |
+| Tasa de error en SSE           | < 1%                                        | < 5%                  |
+| Compatibilidad navegadores     | Chrome, Firefox, Safari últimas 2 versiones | Chrome última versión |
 
 ### 18. Notas de Implementación
 
 #### 18.1 Fórmula ICC(3,1) Simplificada
+
 ```javascript
 // ICC(3,1) - Single rater, consistency
 // Basado en el modelo de efectos mixtos de dos vías
 function calculateICC31(scores1, scores2) {
   const n = scores1.length;
-  
+
   // Calcular medias
   const mean1 = scores1.reduce((a, b) => a + b) / n;
   const mean2 = scores2.reduce((a, b) => a + b) / n;
   const grandMean = (mean1 + mean2) / 2;
-  
+
   // Calcular sumas de cuadrados
-  let SST = 0, SSW = 0, SSB = 0;
-  
+  let SST = 0,
+    SSW = 0,
+    SSB = 0;
+
   for (let i = 0; i < n; i++) {
     const rowMean = (scores1[i] + scores2[i]) / 2;
     SSB += 2 * Math.pow(rowMean - grandMean, 2);
@@ -633,16 +648,17 @@ function calculateICC31(scores1, scores2) {
     SST += Math.pow(scores1[i] - grandMean, 2);
     SST += Math.pow(scores2[i] - grandMean, 2);
   }
-  
+
   const MSB = SSB / (n - 1);
   const MSW = SSW / n;
-  
+
   const icc = (MSB - MSW) / (MSB + MSW);
   return Math.max(0, Math.min(1, icc)); // Clamp between 0 and 1
 }
 ```
 
 #### 18.2 Interpretación ICC
+
 ```javascript
 function getICCInterpretation(icc) {
   if (icc < 0.5) return "Pobre";
@@ -655,6 +671,6 @@ function getICCInterpretation(icc) {
 ---
 
 **Aprobación**:  
-Firma: ________________  
-Fecha: ________________  
+Firma: ******\_\_\_\_******  
+Fecha: ******\_\_\_\_******  
 Versión: 1.0 - PoC
