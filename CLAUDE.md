@@ -507,6 +507,52 @@ npm run build
 npm run preview
 ```
 
+### 🚨 Reglas de Desarrollo OBLIGATORIAS
+
+#### Pre-commit Requirements
+
+**NUNCA hacer commit sin antes ejecutar:**
+
+```bash
+# 1. Ejecutar linter y auto-fix
+npx eslint --fix src
+
+# 2. Verificar que no quedan errores
+npx eslint src
+
+# 3. Solo entonces hacer commit
+git add .
+git commit -m "mensaje del commit"
+```
+
+#### Proceso de Commit Obligatorio
+
+1. **✅ Linting**: `npx eslint --fix src` debe ejecutarse SIN errores
+2. **✅ Build**: `npm run build` debe completarse sin errores
+3. **✅ Verificación**: El proyecto debe arrancar con `npm run dev`
+4. **✅ Commit**: Solo entonces proceder con git commit
+
+#### Reglas ESLint Críticas
+
+- **No variables no utilizadas** (excepto con prefijo `_`)
+- **Componentes no pueden exportar funciones/constantes junto con el componente**
+- **Fast refresh debe funcionar correctamente**
+- **Imports deben usar aliases `@/` cuando sea posible**
+
+#### Estructura de Exports Correcta
+
+```javascript
+// ✅ CORRECTO - Solo componente
+export { ComponentName }
+
+// ✅ CORRECTO - Constantes en archivo separado
+// component-variants.js
+export const componentVariants = cva(...)
+
+// ❌ INCORRECTO - Componente + constantes juntos
+export { Component, componentVariants }
+```
+
 ### 📚 Referencias y Documentación
 
 #### Enlaces Útiles

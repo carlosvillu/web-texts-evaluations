@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 function App() {
-  const [appState, setAppState] = useState({
+  const [_appState, _setAppState] = useState({
     config: {
       endpoint: localStorage.getItem("endpoint") || "",
       separator: localStorage.getItem("separator") || ";",
