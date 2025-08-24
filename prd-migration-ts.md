@@ -155,13 +155,13 @@ export default defineConfig({
 ```
 
 #### Criterios de Aceptación Fase 1
-- [ ] TypeScript instalado y configurado
-- [ ] `tsconfig.json` válido y funcional
-- [ ] `components.json` configurado para TSX
-- [ ] `npm run dev` arranca sin errores
-- [ ] Path aliasing `@/` funciona
-- [ ] Vite acepta archivos TS/TSX
-- [ ] shadcn/ui generará componentes en TSX en el futuro
+- [x] TypeScript instalado y configurado
+- [x] `tsconfig.json` válido y funcional
+- [x] `components.json` configurado para TSX
+- [x] `npm run dev` arranca sin errores
+- [x] Path aliasing `@/` funciona
+- [x] Vite acepta archivos TS/TSX
+- [x] shadcn/ui generará componentes en TSX en el futuro
 
 ---
 
@@ -242,14 +242,14 @@ export default config
 ```
 
 #### Criterios de Aceptación Fase 2
-- [ ] `npm run lint` funciona con archivos TS/TSX
-- [ ] `tailwind.config.ts` compila sin errores
-- [ ] `postcss.config.ts` funciona correctamente
-- [ ] Todos los colores de shadcn/ui se mantienen
-- [ ] `tailwindcss-animate` plugin sigue funcionando
-- [ ] Content array incluye archivos `.ts` y `.tsx`
-- [ ] No hay conflictos entre herramientas
-- [ ] Autocompletado de Tailwind funciona en componentes
+- [x] `npm run lint` funciona con archivos TS/TSX
+- [x] `tailwind.config.ts` compila sin errores
+- [x] `postcss.config.ts` funciona correctamente
+- [x] Todos los colores de shadcn/ui se mantienen
+- [x] `tailwindcss-animate` plugin sigue funcionando
+- [x] Content array incluye archivos `.ts` y `.tsx`
+- [x] No hay conflictos entre herramientas
+- [x] Autocompletado de Tailwind funciona en componentes
 
 ---
 
