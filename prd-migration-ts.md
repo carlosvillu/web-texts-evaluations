@@ -495,11 +495,11 @@ function App() {
 - Verificar que imports funcionan correctamente
 
 #### Criterios de Aceptación Fase 5
-- [ ] `main.tsx` funciona correctamente
-- [ ] `App.tsx` compila sin errores
-- [ ] Estado completamente tipado
-- [ ] Aplicación arranca en desarrollo
-- [ ] No hay regresiones visuales
+- [x] `main.tsx` funciona correctamente
+- [x] `App.tsx` compila sin errores
+- [x] Estado completamente tipado
+- [x] Aplicación arranca en desarrollo
+- [x] No hay regresiones visuales
 
 ---
 
