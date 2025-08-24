@@ -38,7 +38,7 @@ const DEFAULT_PARSE_OPTIONS: Required<CSVParseOptions> = {
   skipEmptyLines: true,
   trimHeaders: true,
   transformHeader: (header: string) => header.trim().toLowerCase(),
-  maxRows: 5000 // Límite de seguridad
+  maxRows: 10000 // Límite aumentado para soportar más datos
 };
 
 /**
@@ -112,18 +112,26 @@ export class CSVParser {
         : [];
       result.metadata.processingTime = Date.now() - startTime;
 
-      // Advertencias
+      // Advertencias con más detalle
       if (result.metadata.invalidRows > 0) {
         result.warnings.push(
-          `${result.metadata.invalidRows} filas fueron ignoradas por errores de formato`
+          `⚠️ ${result.metadata.invalidRows} de ${result.metadata.totalRows} filas fueron ignoradas por errores de formato o validación`
         );
       }
 
       if (result.metadata.totalRows > this.options.maxRows) {
         result.warnings.push(
-          `El archivo excede el límite de ${this.options.maxRows} filas. Solo se procesarán las primeras.`
+          `⚠️ El archivo tiene ${result.metadata.totalRows} filas pero excede el límite de ${this.options.maxRows}. Solo se procesaron las primeras ${this.options.maxRows} filas.`
         );
         result.data = result.data.slice(0, this.options.maxRows);
+        result.metadata.validRows = Math.min(result.metadata.validRows, this.options.maxRows);
+      }
+
+      // Información adicional sobre el procesamiento
+      if (result.success && result.data.length > 0) {
+        result.warnings.push(
+          `✅ Procesamiento completado: ${result.metadata.validRows} filas válidas de ${result.metadata.totalRows} filas totales`
+        );
       }
 
     } catch (error) {

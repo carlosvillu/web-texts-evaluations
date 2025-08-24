@@ -3,7 +3,9 @@ export interface AppConfig {
   separator: string;
 }
 
-export interface CSVRow {
+export type ConfigState = AppConfig;
+
+export interface CSVRow extends Record<string, unknown> {
   id_participante: string;
   respuesta: string;
   curso: string;
@@ -13,7 +15,7 @@ export interface CSVRow {
   evaluacion_3?: number;
 }
 
-export interface APIResponse {
+export interface APIResponse extends Record<string, unknown> {
   id_alumno: string;
   nota: number;
   confianza?: number;

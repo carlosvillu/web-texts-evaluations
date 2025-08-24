@@ -41,16 +41,11 @@ export const useSSE = (
   callbacks: SSECallbacks = {},
   config: SSEConfig = {}
 ) => {
-  const {
-    onMessage,
-    onBatchComplete,
-    onComplete,
-    onError,
-    onOpen,
-    onClose
-  } = callbacks;
-
   const mergedConfig = { ...DEFAULT_CONFIG, ...config };
+  
+  // Use refs to avoid recreating callbacks and causing dependency cycles
+  const callbacksRef = useRef(callbacks);
+  callbacksRef.current = callbacks;
   
   const [state, setState] = useState<SSEState>({
     isConnected: false,
@@ -96,7 +91,10 @@ export const useSSE = (
   const setupEventHandlers = useCallback((eventSource: EventSource) => {
     // Event: conexión abierta
     eventSource.onopen = () => {
-      clearTimeout(connectionTimeoutRef.current!);
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
       setState(prev => ({
         ...prev,
         isConnected: true,
@@ -104,46 +102,59 @@ export const useSSE = (
         error: null,
         reconnectCount: 0 // Reset contador en conexión exitosa
       }));
-      onOpen?.();
+      callbacksRef.current.onOpen?.();
     };
 
-    // Event: mensaje genérico
+    // Event: mensaje genérico - aquí vienen los eventos batch_complete
     eventSource.onmessage = (event) => {
+      console.log("🔥 SSE onmessage event received:", event);
+      console.log("🔥 Raw event.data:", event.data);
       try {
         const data = JSON.parse(event.data);
-        onMessage?.(data, "message");
+        console.log("🔥 Parsed JSON data:", data);
+        
+        // Llamar onMessage genérico
+        callbacksRef.current.onMessage?.(data, "message");
+        
+        // Si es un evento batch_complete, llamar el handler específico
+        if (data.event === "batch_complete") {
+          console.log("🔥 Detected batch_complete event, calling onBatchComplete with:", data);
+          callbacksRef.current.onBatchComplete?.(data);
+          console.log("🔥 onBatchComplete called");
+        }
+        
+        // Si es un evento complete, llamar el handler específico y cerrar conexión
+        if (data.event === "complete") {
+          console.log("🔥 Detected complete event, calling onComplete with:", data);
+          callbacksRef.current.onComplete?.(data);
+          
+          // Cerrar conexión al completar
+          if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+            reconnectTimeoutRef.current = null;
+          }
+          if (connectionTimeoutRef.current) {
+            clearTimeout(connectionTimeoutRef.current);
+            connectionTimeoutRef.current = null;
+          }
+          
+          if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+            eventSourceRef.current = null;
+          }
+          
+          setState(prev => ({
+            ...prev,
+            isConnected: false,
+            isConnecting: false
+          }));
+        }
       } catch (error) {
         console.warn("Error parseando mensaje SSE:", error);
-        onError?.("Error parseando datos del servidor");
+        callbacksRef.current.onError?.("Error parseando datos del servidor");
       }
     };
 
-    // Event: batch_complete
-    eventSource.addEventListener("batch_complete", (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        onMessage?.(data, "batch_complete");
-        onBatchComplete?.(data);
-      } catch (error) {
-        console.warn("Error parseando batch_complete:", error);
-        onError?.("Error procesando lote de resultados");
-      }
-    });
-
-    // Event: complete
-    eventSource.addEventListener("complete", (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        onMessage?.(data, "complete");
-        onComplete?.(data);
-        
-        // Cerrar conexión al completar
-        setTimeout(() => closeConnection(), 1000);
-      } catch (error) {
-        console.warn("Error parseando complete:", error);
-        onError?.("Error finalizando procesamiento");
-      }
-    });
 
     // Event: error
     eventSource.onerror = (error) => {
@@ -156,14 +167,14 @@ export const useSSE = (
         error: "Error de conexión con el servidor"
       }));
 
-      onError?.(error);
+      callbacksRef.current.onError?.(error);
       
       // Intentar reconectar solo si no es un cierre manual
       if (eventSource.readyState !== EventSource.CLOSED) {
         // Reconectar inline para evitar dependency cycle
         setState(prevState => {
           if (prevState.reconnectCount >= mergedConfig.maxReconnectAttempts!) {
-            onError?.("Máximo número de intentos de reconexión alcanzado");
+            callbacksRef.current.onError?.("Máximo número de intentos de reconexión alcanzado");
             return {
               ...prevState,
               isConnecting: false,
@@ -190,10 +201,10 @@ export const useSSE = (
           };
         });
       } else {
-        onClose?.();
+        callbacksRef.current.onClose?.();
       }
     };
-  }, [onOpen, onMessage, onBatchComplete, onComplete, onError, onClose, closeConnection, mergedConfig.maxReconnectAttempts, mergedConfig.reconnectInterval]);
+  }, [mergedConfig.maxReconnectAttempts, mergedConfig.reconnectInterval]);
 
 
   // Conectar a SSE
@@ -221,7 +232,7 @@ export const useSSE = (
             isConnecting: false,
             error: "Timeout de conexión"
           }));
-          onError?.("Timeout de conexión");
+          callbacksRef.current.onError?.("Timeout de conexión");
         }
       }, mergedConfig.timeout);
 
@@ -233,9 +244,9 @@ export const useSSE = (
         isConnecting: false,
         error: "Error creando conexión SSE"
       }));
-      onError?.(error as string);
+      callbacksRef.current.onError?.(error as string);
     }
-  }, [closeConnection, mergedConfig.timeout, onError, setupEventHandlers]);
+  }, [closeConnection, mergedConfig.timeout, setupEventHandlers]);
 
   // Conectar cuando cambie la URL
   useEffect(() => {
@@ -246,8 +257,21 @@ export const useSSE = (
     }
 
     // Cleanup al desmontar
-    return closeConnection;
-  }, [url, connectToSSE, closeConnection]);
+    return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+    };
+  }, [url, connectToSSE]);
 
   // Función manual para reconectar
   const reconnect = useCallback(() => {
@@ -261,8 +285,8 @@ export const useSSE = (
   const disconnect = useCallback(() => {
     urlRef.current = null;
     closeConnection();
-    onClose?.();
-  }, [closeConnection, onClose]);
+    callbacksRef.current.onClose?.();
+  }, [closeConnection]);
 
   return {
     ...state,
@@ -288,12 +312,20 @@ export const useProcessingSSE = (
     sseUrl,
     {
       onBatchComplete: (data) => {
-        const parsedData = data as { results?: unknown[]; progress?: { completed?: number; total?: number } };
-        if (parsedData.results && parsedData.progress) {
+        console.log('useProcessingSSE received data:', data);
+        
+        // Los datos vienen como { event: "batch_complete", data: { results: [...], progress: {...} } }
+        // Necesitamos extraer data.data
+        const eventData = data as { data?: { results?: unknown[]; progress?: { completed?: number; total?: number } } };
+        const actualData = eventData.data;
+        
+        console.log('Extracted actualData:', actualData);
+        
+        if (actualData?.results && actualData.progress) {
           onProgress?.({
-            completed: parsedData.progress.completed || 0,
-            total: parsedData.progress.total || 0,
-            results: parsedData.results
+            completed: actualData.progress.completed || 0,
+            total: actualData.progress.total || 0,
+            results: actualData.results
           });
         }
       },

@@ -5,7 +5,7 @@
 import { CSVRow, APIResponse } from "@/types/app";
 
 export interface EvaluationRequest {
-  data: Array<{
+  items: Array<{
     id_alumno: string;
     curso: string;
     consigna: string;
@@ -128,7 +128,7 @@ export class APIClient {
 
     // Mapear datos CSV al formato esperado por la API
     const requestData: EvaluationRequest = {
-      data: csvData.map(row => ({
+      items: csvData.map(row => ({
         id_alumno: row.id_participante,
         curso: row.curso,
         consigna: row.pregunta,
