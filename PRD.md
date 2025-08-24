@@ -6,7 +6,7 @@
 
 - **Nombre**: Web SPA para Evaluación Automatizada de Textos Educativos
 - **Versión**: 1.0 - Prueba de Concepto
-- **Stack**: React + Vite + Tailwind CSS v3 + shadcn/ui
+- **Stack**: React + Vite + TypeScript + Tailwind CSS v3 + shadcn/ui
 - **Objetivo**: Interfaz para procesar CSVs masivos y visualizar evaluaciones automáticas con métricas ICC
 
 ---
@@ -56,7 +56,7 @@
   ├── utils/
   └── lib/
   ```
-- [x] **1.3.2** Crear archivos de entrada básicos (main.jsx, App.jsx, index.css)
+- [x] **1.3.2** Crear archivos de entrada básicos (main.tsx, App.tsx, index.css)
 
 **Criterios de Aceptación Fase 1:**
 
@@ -74,40 +74,40 @@
 
 ### 2.1 Utilidades Base
 
-- [ ] **2.1.1** Crear `src/utils/formatters.js`
+- [ ] **2.1.1** Crear `src/utils/formatters.ts`
   - Formateo de números, fechas, tiempos
   - Formateo de métricas (ICC, desviaciones)
-- [ ] **2.1.2** Crear `src/utils/validators.js`
+- [ ] **2.1.2** Crear `src/utils/validators.ts`
   - Validación de URLs de endpoint
   - Validación de estructura CSV
   - Validación de datos de entrada
-- [ ] **2.1.3** Crear `src/lib/utils.js` (shadcn/ui utilities)
+- [x] **2.1.3** Crear `src/lib/utils.ts` (shadcn/ui utilities)
   - clsx, tailwind-merge utilities
 
 ### 2.2 Hooks Personalizados
 
-- [ ] **2.2.1** Crear `src/hooks/useLocalStorage.js`
+- [ ] **2.2.1** Crear `src/hooks/useLocalStorage.ts`
   - Hook para persistencia en localStorage
   - Manejo de serialización/deserialización
-- [ ] **2.2.2** Crear `src/hooks/useSSE.js`
+- [ ] **2.2.2** Crear `src/hooks/useSSE.ts`
   - Hook para manejo de Server-Sent Events
   - Gestión de conexión, reconexión, errores
   - Event listeners para 'batch_complete' y 'complete'
-- [ ] **2.2.3** Crear `src/hooks/useVirtualTable.js`
+- [ ] **2.2.3** Crear `src/hooks/useVirtualTable.ts`
   - Hook para configuración de tabla virtual
   - Manejo de scroll, paginación virtual
 
 ### 2.3 Servicios Core
 
-- [ ] **2.3.1** Crear `src/services/api.js`
+- [ ] **2.3.1** Crear `src/services/api.ts`
   - Cliente API para comunicación con backend
   - Funciones para iniciar procesamiento
   - Manejo de errores HTTP
-- [ ] **2.3.2** Crear `src/services/csvParser.js`
+- [ ] **2.3.2** Crear `src/services/csvParser.ts`
   - Parsing de CSV con Papaparse
   - Mapeo de columnas requeridas
   - Validación de estructura de datos
-- [ ] **2.3.3** Crear `src/services/metrics.js`
+- [ ] **2.3.3** Crear `src/services/metrics.ts`
   - Implementación de cálculo ICC(3,1)
   - Cálculo de medianas por fila
   - Cálculo de desviaciones y estadísticas
@@ -140,17 +140,17 @@
 
 ### 3.1 Componentes Base (shadcn/ui)
 
-- [ ] **3.1.1** Verificar y personalizar Button component
-- [ ] **3.1.2** Verificar y personalizar Card component
-- [ ] **3.1.3** Verificar y personalizar Input component
-- [ ] **3.1.4** Verificar y personalizar Progress component
-- [ ] **3.1.5** Verificar y personalizar Alert component
-- [ ] **3.1.6** Verificar y personalizar Badge component
-- [ ] **3.1.7** Verificar y personalizar Tabs component
+- [x] **3.1.1** Verificar y personalizar Button component
+- [x] **3.1.2** Verificar y personalizar Card component
+- [x] **3.1.3** Verificar y personalizar Input component
+- [x] **3.1.4** Verificar y personalizar Progress component
+- [x] **3.1.5** Verificar y personalizar Alert component
+- [x] **3.1.6** Verificar y personalizar Badge component
+- [x] **3.1.7** Verificar y personalizar Tabs component
 
 ### 3.2 ConfigurationSection Component
 
-- [ ] **3.2.1** Crear `src/components/ConfigurationSection.jsx`
+- [ ] **3.2.1** Crear `src/components/ConfigurationSection.tsx`
   ```typescript
   interface ConfigProps {
     endpointUrl: string;
@@ -165,7 +165,7 @@
 
 ### 3.3 FileUploadSection Component
 
-- [ ] **3.3.1** Crear `src/components/FileUploadSection.jsx`
+- [ ] **3.3.1** Crear `src/components/FileUploadSection.tsx`
 - [ ] **3.3.2** Implementar drag & drop área
 - [ ] **3.3.3** Integrar con csvParser service
 - [ ] **3.3.4** Preview de primeras 5 filas cargadas
@@ -176,7 +176,7 @@
 
 ### 3.4 VirtualTable Component
 
-- [ ] **3.4.1** Crear `src/components/VirtualTable.jsx`
+- [ ] **3.4.1** Crear `src/components/VirtualTable.tsx`
 - [ ] **3.4.2** Configurar @tanstack/react-virtual
 - [ ] **3.4.3** Configurar @tanstack/react-table
 - [ ] **3.4.4** Implementar renderizado de 3000+ filas
@@ -186,16 +186,16 @@
 
 ### 3.5 Componentes Adicionales
 
-- [ ] **3.5.1** Crear `src/components/ProcessingController.jsx`
+- [ ] **3.5.1** Crear `src/components/ProcessingController.tsx`
   - Estado de procesamiento (idle, processing, completed, error)
   - Botón de inicio/parada
   - Manejo de jobId
-- [ ] **3.5.2** Crear `src/components/MetricsPanel.jsx`
+- [ ] **3.5.2** Crear `src/components/MetricsPanel.tsx`
   - Display de ICC(3,1) con interpretación
   - Display de desviación media y estándar
   - Contador de procesados vs total
   - Badge de fiabilidad (reliable/unreliable)
-- [ ] **3.5.3** Crear `src/components/ResultsExporter.jsx`
+- [ ] **3.5.3** Crear `src/components/ResultsExporter.tsx`
   - Botón de descarga CSV
   - Generación de CSV enriquecido
   - Progress de descarga
@@ -286,16 +286,16 @@
 **Duración estimada**: 4-5 horas  
 **Objetivo**: Integrar todos los componentes y manejar estado global
 
-### 5.1 App.jsx Principal
+### 5.1 App.tsx Principal
 
-- [ ] **5.1.1** Crear estructura principal de App.jsx
+- [x] **5.1.1** Crear estructura principal de App.tsx
 - [ ] **5.1.2** Implementar estado global:
-  ```javascript
-  const [appState, setAppState] = useState({
+  ```typescript
+  const [appState, setAppState] = useState<AppState>({
     config: { endpoint: "", separator: ";" },
     data: { original: [], results: [], merged: [] },
-    processing: { isActive: false, jobId: null, progress: 0 },
-    metrics: { icc: null, meanDeviation: null, reliabilityMet: false },
+    processing: { isActive: false, jobId: null, progress: { completed: 0, total: 0, percentage: 0 }, timeRemaining: null },
+    metrics: { icc: null, meanDeviation: null, stdDeviation: null, reliabilityMet: false, processedCount: 0 },
   });
   ```
 - [ ] **5.1.3** Integrar ConfigurationSection
@@ -397,40 +397,45 @@
 
 ### Archivos Core
 
-- `src/App.jsx` - Componente principal
-- `src/main.jsx` - Entrada de la aplicación
+- `src/App.tsx` - Componente principal
+- `src/main.tsx` - Entrada de la aplicación
 - `src/index.css` - Estilos globales
+- `src/types/app.ts` - Tipos de dominio
+- `src/types/ui.ts` - Tipos de componentes UI
 
 ### Componentes UI
 
-- `src/components/ConfigurationSection.jsx`
-- `src/components/FileUploadSection.jsx`
-- `src/components/VirtualTable.jsx`
-- `src/components/ProcessingController.jsx`
-- `src/components/MetricsPanel.jsx`
-- `src/components/ResultsExporter.jsx`
+- `src/components/ConfigurationSection.tsx`
+- `src/components/FileUploadSection.tsx`
+- `src/components/VirtualTable.tsx`
+- `src/components/ProcessingController.tsx`
+- `src/components/MetricsPanel.tsx`
+- `src/components/ResultsExporter.tsx`
+- `src/components/ui/*.tsx` - Componentes shadcn/ui tipados
 
 ### Hooks & Services
 
-- `src/hooks/useLocalStorage.js`
-- `src/hooks/useSSE.js`
-- `src/hooks/useVirtualTable.js`
-- `src/services/api.js`
-- `src/services/csvParser.js`
-- `src/services/metrics.js`
+- `src/hooks/useLocalStorage.ts`
+- `src/hooks/useSSE.ts`
+- `src/hooks/useVirtualTable.ts`
+- `src/services/api.ts`
+- `src/services/csvParser.ts`
+- `src/services/metrics.ts`
 
 ### Utilities
 
-- `src/utils/formatters.js`
-- `src/utils/validators.js`
-- `src/lib/utils.js`
+- `src/utils/formatters.ts`
+- `src/utils/validators.ts`
+- `src/lib/utils.ts`
 
 ### Configuración
 
 - `package.json` - Dependencias y scripts
-- `vite.config.js` - Configuración de Vite
-- `tailwind.config.js` - Configuración de Tailwind
-- `postcss.config.js` - Configuración de PostCSS
+- `vite.config.ts` - Configuración de Vite
+- `tailwind.config.ts` - Configuración de Tailwind
+- `postcss.config.ts` - Configuración de PostCSS
+- `tsconfig.json` - Configuración de TypeScript
+- `eslint.config.js` - Configuración ESLint con soporte TS
 
 ## Métricas de Éxito del PoC
 

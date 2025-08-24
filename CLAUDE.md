@@ -24,7 +24,7 @@ Claude Code debe comportarse como un **programador pragmático** que aplica los 
 ### 🎯 Información del Proyecto
 
 - **Nombre**: Web SPA para Evaluación Automatizada de Textos Educativos
-- **Stack**: React 18 + Vite + Tailwind CSS + shadcn/ui
+- **Stack**: React 18 + Vite + TypeScript + Tailwind CSS + shadcn/ui
 - **Arquitectura**: SPA con SSE para tiempo real
 - **Objetivo**: Procesar CSVs de 3000+ filas con métricas ICC en tiempo real
 
@@ -52,39 +52,43 @@ npm run test
 ```
 text-evaluation-web/
 ├── package.json
-├── vite.config.js
-├── tailwind.config.js
-├── postcss.config.js
+├── vite.config.ts
+├── tailwind.config.ts
+├── postcss.config.ts
+├── tsconfig.json
 ├── index.html
 ├── .env.example
 ├── README.md
 ├── public/
 │   └── favicon.ico
 ├── src/
-│   ├── main.jsx                 # Entrada de la aplicación
-│   ├── App.jsx                  # Componente principal con estado global
+│   ├── main.tsx                 # Entrada de la aplicación
+│   ├── App.tsx                  # Componente principal con estado global
 │   ├── index.css                # Estilos globales + Tailwind imports
 │   ├── components/
 │   │   ├── ui/                  # shadcn/ui components (button, card, etc.)
-│   │   ├── ConfigurationSection.jsx      # Config endpoint + CSV separator
-│   │   ├── FileUploadSection.jsx         # Drag & drop + CSV parsing
-│   │   ├── VirtualTable.jsx              # Tabla virtual para 3000+ filas
-│   │   ├── ProcessingController.jsx      # Control SSE + progress
-│   │   ├── MetricsPanel.jsx              # ICC + estadísticas tiempo real
-│   │   └── ResultsExporter.jsx           # Descarga CSV enriquecido
+│   │   ├── ConfigurationSection.tsx      # Config endpoint + CSV separator
+│   │   ├── FileUploadSection.tsx         # Drag & drop + CSV parsing
+│   │   ├── VirtualTable.tsx              # Tabla virtual para 3000+ filas
+│   │   ├── ProcessingController.tsx      # Control SSE + progress
+│   │   ├── MetricsPanel.tsx              # ICC + estadísticas tiempo real
+│   │   └── ResultsExporter.tsx           # Descarga CSV enriquecido
 │   ├── hooks/
-│   │   ├── useLocalStorage.js            # Persistencia configuraciones
-│   │   ├── useSSE.js                     # Server-Sent Events handler
-│   │   └── useVirtualTable.js            # Configuración tabla virtual
+│   │   ├── useLocalStorage.ts            # Persistencia configuraciones
+│   │   ├── useSSE.ts                     # Server-Sent Events handler
+│   │   └── useVirtualTable.ts            # Configuración tabla virtual
 │   ├── services/
-│   │   ├── api.js                        # Cliente API + comunicación backend
-│   │   ├── csvParser.js                  # Papaparse + validación CSV
-│   │   └── metrics.js                    # Cálculo ICC(3,1) + estadísticas
+│   │   ├── api.ts                        # Cliente API + comunicación backend
+│   │   ├── csvParser.ts                  # Papaparse + validación CSV
+│   │   └── metrics.ts                    # Cálculo ICC(3,1) + estadísticas
 │   ├── utils/
-│   │   ├── formatters.js                 # Formateo números, fechas, métricas
-│   │   └── validators.js                 # Validación URLs, CSV, datos
+│   │   ├── formatters.ts                 # Formateo números, fechas, métricas
+│   │   └── validators.ts                 # Validación URLs, CSV, datos
+│   ├── types/
+│   │   ├── app.ts                        # Tipos principales de la aplicación
+│   │   └── ui.ts                         # Tipos para componentes UI
 │   └── lib/
-│       └── utils.js                      # shadcn/ui utilities (clsx, cn)
+│       └── utils.ts                      # shadcn/ui utilities (clsx, cn)
 ```
 
 ### 🔧 Tecnologías y Dependencias
@@ -117,10 +121,10 @@ text-evaluation-web/
 
 ### 📊 Arquitectura de Estado
 
-#### Estado Global (App.jsx)
+#### Estado Global (App.tsx)
 
-```javascript
-const [appState, setAppState] = useState({
+```typescript
+const [appState, setAppState] = useState<AppState>({
   config: {
     endpoint: localStorage.getItem("endpoint") || "",
     separator: localStorage.getItem("separator") || ";",
@@ -158,7 +162,7 @@ const [appState, setAppState] = useState({
 
 #### Endpoints Esperados
 
-```javascript
+```typescript
 // Iniciar procesamiento
 POST /evaluate
 Body: { data: [{ id_alumno, curso, consigna, respuesta }] }
@@ -176,7 +180,7 @@ SSE Events:
 
 ##### CSV Input (requerido)
 
-```javascript
+```typescript
 {
   id_participante: string,    // → id_alumno en API
   respuesta: string,          // → respuesta en API
@@ -190,7 +194,7 @@ SSE Events:
 
 ##### API Response
 
-```javascript
+```typescript
 {
   id_alumno: string,
   nota: number,               // Evaluación del modelo (0-10)
@@ -201,7 +205,7 @@ SSE Events:
 
 ##### Resultado Enriquecido (para export)
 
-```javascript
+```typescript
 {
   ...originalRow,             // Todos los campos del CSV original
   evaluacion_modelo: number,  // API nota
@@ -214,10 +218,10 @@ SSE Events:
 
 #### ICC(3,1) - Coeficiente de Correlación Intraclase
 
-```javascript
+```typescript
 // ICC(3,1): Single rater, consistency
 // Compara modelo vs mediana de evaluaciones humanas
-function calculateICC31(modelScores, humanMedians) {
+function calculateICC31(modelScores: number[], humanMedians: number[]): number {
   const n = modelScores.length;
 
   // Calcular medias
@@ -247,7 +251,7 @@ function calculateICC31(modelScores, humanMedians) {
 }
 
 // Interpretación ICC
-function getICCInterpretation(icc) {
+function getICCInterpretation(icc: number): string {
   if (icc < 0.5) return "Pobre";
   if (icc < 0.75) return "Moderado";
   if (icc < 0.9) return "Bueno";
@@ -257,8 +261,8 @@ function getICCInterpretation(icc) {
 
 #### Mediana de Evaluaciones Humanas
 
-```javascript
-function calculateMedian(row) {
+```typescript
+function calculateMedian(row: any): number | null {
   const scores = [row.evaluacion_1, row.evaluacion_2, row.evaluacion_3].filter(
     (v) => v !== null && v !== undefined && v !== "",
   );
@@ -315,7 +319,7 @@ function calculateMedian(row) {
 
 #### Virtualización de Tablas
 
-```javascript
+```typescript
 // Configuración react-virtual para 3000+ filas
 const virtualizer = useVirtualizer({
   count: data.length,
@@ -327,7 +331,7 @@ const virtualizer = useVirtualizer({
 
 #### Memoización Critical
 
-```javascript
+```typescript
 // Cálculos pesados
 const metrics = useMemo(() => {
   if (results.length === 0) return null;
@@ -353,8 +357,8 @@ const handleProgressUpdate = useCallback((newProgress) => {
 
 #### Patrón Global de Errores
 
-```javascript
-const handleError = (error, context) => {
+```typescript
+const handleError = (error: Error, context: string) => {
   console.error(`Error in ${context}:`, error);
 
   // UI feedback simple
@@ -398,8 +402,8 @@ try {
 
 #### useSSE Hook
 
-```javascript
-const useSSE = (url, onMessage, onError, onComplete) => {
+```typescript
+const useSSE = (url: string | null, onMessage: (data: any) => void, onError: (error: Event) => void, onComplete: (data: any) => void) => {
   useEffect(() => {
     if (!url) return;
 
@@ -428,8 +432,8 @@ const useSSE = (url, onMessage, onError, onComplete) => {
 
 #### useLocalStorage Hook
 
-```javascript
-const useLocalStorage = (key, initialValue) => {
+```typescript
+const useLocalStorage = <T>(key: string, initialValue: T): [T, (value: T | ((prev: T) => T)) => void] => {
   const [storedValue, setStoredValue] = useState(() => {
     try {
       const item = window.localStorage.getItem(key);
@@ -474,7 +478,7 @@ Consultar PRD.md para criterios específicos de cada fase.
 #### Instalación Inicial
 
 ```bash
-npm create vite@latest text-evaluation-web -- --template react
+npm create vite@latest text-evaluation-web -- --template react-ts
 cd text-evaluation-web
 npm install
 
@@ -517,10 +521,13 @@ npm run preview
 # 1. Ejecutar linter y auto-fix
 npx eslint --fix src
 
-# 2. Verificar que no quedan errores
+# 2. Verificar que no quedan errores de linting
 npx eslint src
 
-# 3. Solo entonces hacer commit
+# 3. Verificar que no hay errores de tipado TypeScript
+npx tsc --noEmit
+
+# 4. Solo entonces hacer commit
 git add .
 git commit -m "mensaje del commit"
 ```
@@ -528,9 +535,10 @@ git commit -m "mensaje del commit"
 #### Proceso de Commit Obligatorio
 
 1. **✅ Linting**: `npx eslint --fix src` debe ejecutarse SIN errores
-2. **✅ Build**: `npm run build` debe completarse sin errores
-3. **✅ Verificación**: El proyecto debe arrancar con `npm run dev`
-4. **✅ Commit**: Solo entonces proceder con git commit
+2. **✅ TypeScript**: `npx tsc --noEmit` debe ejecutarse SIN errores de tipado
+3. **✅ Build**: `npm run build` debe completarse sin errores
+4. **✅ Verificación**: El proyecto debe arrancar con `npm run dev`
+5. **✅ Commit**: Solo entonces proceder con git commit
 
 #### Reglas ESLint Críticas
 
@@ -541,12 +549,12 @@ git commit -m "mensaje del commit"
 
 #### Estructura de Exports Correcta
 
-```javascript
+```typescript
 // ✅ CORRECTO - Solo componente
 export { ComponentName }
 
 // ✅ CORRECTO - Constantes en archivo separado
-// component-variants.js
+// component-variants.ts
 export const componentVariants = cva(...)
 
 // ❌ INCORRECTO - Componente + constantes juntos
@@ -569,7 +577,7 @@ export { Component, componentVariants }
 1. **Component-First**: Cada funcionalidad es un componente reutilizable
 2. **Hook-Based**: Lógica compleja en hooks personalizados
 3. **Service Layer**: API calls y processing en servicios separados
-4. **State-Up**: Estado compartido en App.jsx, props down
+4. **State-Up**: Estado compartido en App.tsx, props down
 5. **Error Boundaries**: Manejo graceful de errores en cada nivel
 
 ---
