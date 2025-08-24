@@ -51,6 +51,7 @@ export default defineConfig([
       ...reactHooks.configs['recommended-latest'].rules,
       ...reactRefresh.configs.vite.rules,
       '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      '@typescript-eslint/no-empty-object-type': 'off',
     },
   },
 ])

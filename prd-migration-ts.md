@@ -416,11 +416,11 @@ export { Button }
 - Validar estilos de Tailwind
 
 #### Criterios de Aceptación Fase 4
-- [ ] Todos los componentes UI migrados
-- [ ] Props tipados correctamente
-- [ ] ForwardRef funciona donde aplique
-- [ ] Estilos se mantienen intactos
-- [ ] No hay errores de compilación
+- [x] Todos los componentes UI migrados
+- [x] Props tipados correctamente
+- [x] ForwardRef funciona donde aplique
+- [x] Estilos se mantienen intactos
+- [x] No hay errores de compilación
 
 ---
 
