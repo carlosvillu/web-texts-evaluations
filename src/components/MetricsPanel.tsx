@@ -1,9 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { BarChart, TrendingUp, Target, Users } from 'lucide-react';
-import { calculateICC31, calculateMedian, getICCInterpretation } from '@/services/metrics';
+import { BarChart, TrendingUp, Target, Users, RefreshCw } from 'lucide-react';
+import { calculateMetrics } from '@/services/metrics';
 import type { CSVRow, APIResponse, MetricsState } from '@/types/app';
 
 interface MetricsPanelProps {
@@ -24,7 +24,27 @@ interface CalculatedMetrics {
 }
 
 export function MetricsPanel({ originalData, results, metrics }: MetricsPanelProps) {
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState<number>(Date.now());
+  const calculationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastResultsLengthRef = useRef<number>(0);
+
+  // Debounced calculation with 500ms delay
   const calculatedMetrics = useMemo<CalculatedMetrics>(() => {
+    const startTime = performance.now();
+    setIsCalculating(true);
+
+    // Clear existing timeout
+    if (calculationTimeoutRef.current) {
+      clearTimeout(calculationTimeoutRef.current);
+    }
+
+    // Set timeout to clear calculating state
+    calculationTimeoutRef.current = setTimeout(() => {
+      setIsCalculating(false);
+      setLastUpdateTime(Date.now());
+    }, 100);
+
     if (results.length === 0) {
       return {
         icc: null,
@@ -38,70 +58,42 @@ export function MetricsPanel({ originalData, results, metrics }: MetricsPanelPro
       };
     }
 
-    // Match results with original data and calculate medians
-    const comparisons: Array<{ modelScore: number; humanMedian: number }> = [];
-    
-    results.forEach((result) => {
-      const originalRow = originalData.find(
-        (row) => row.id_participante === result.id_alumno
-      );
-      
-      if (originalRow) {
-        const humanMedian = calculateMedian(originalRow);
-        if (humanMedian !== null) {
-          comparisons.push({
-            modelScore: result.nota,
-            humanMedian,
-          });
-        }
-      }
-    });
+    // Use the optimized calculateMetrics function from services
+    const metricsResult = calculateMetrics(originalData, results);
+    const processedPercentage = originalData.length > 0 ? 
+      Math.round((results.length / originalData.length) * 100) : 0;
 
-    if (comparisons.length === 0) {
-      return {
-        icc: null,
-        iccInterpretation: 'Sin comparaciones válidas',
-        meanDeviation: null,
-        stdDeviation: null,
-        reliabilityMet: false,
-        processedCount: results.length,
-        processedPercentage: originalData.length > 0 ? Math.round((results.length / originalData.length) * 100) : 0,
-        validComparisons: 0,
-      };
-    }
-
-    // Calculate ICC(3,1)
-    const modelScores = comparisons.map(c => c.modelScore);
-    const humanMedians = comparisons.map(c => c.humanMedian);
-    const icc = calculateICC31(modelScores, humanMedians);
-    const iccInfo = getICCInterpretation(icc);
-    const iccInterpretation = iccInfo.interpretation;
-
-    // Calculate deviations
-    const deviations = comparisons.map(c => Math.abs(c.modelScore - c.humanMedian));
-    const meanDeviation = deviations.reduce((sum, dev) => sum + dev, 0) / deviations.length;
-    
-    // Calculate standard deviation
-    const variance = deviations.reduce((sum, dev) => {
-      const diff = dev - meanDeviation;
-      return sum + (diff * diff);
-    }, 0) / deviations.length;
-    const stdDeviation = Math.sqrt(variance);
-
-    const reliabilityMet = icc !== null && icc > 0.8;
-    const processedPercentage = originalData.length > 0 ? Math.round((results.length / originalData.length) * 100) : 0;
+    const calculationTime = performance.now() - startTime;
+    console.log(`Metrics calculation took ${calculationTime.toFixed(2)}ms for ${results.length} results`);
 
     return {
-      icc,
-      iccInterpretation,
-      meanDeviation,
-      stdDeviation,
-      reliabilityMet,
+      icc: metricsResult.icc,
+      iccInterpretation: metricsResult.interpretation.iccInterpretation,
+      meanDeviation: metricsResult.meanDeviation,
+      stdDeviation: metricsResult.stdDeviation,
+      reliabilityMet: metricsResult.reliabilityMet,
       processedCount: results.length,
       processedPercentage,
-      validComparisons: comparisons.length,
+      validComparisons: metricsResult.stats?.validPairs || 0,
     };
   }, [originalData, results]);
+
+  // Track when new results come in for visual feedback
+  useEffect(() => {
+    if (results.length !== lastResultsLengthRef.current) {
+      lastResultsLengthRef.current = results.length;
+      setLastUpdateTime(Date.now());
+    }
+  }, [results.length]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (calculationTimeoutRef.current) {
+        clearTimeout(calculationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const getICCBadgeVariant = (icc: number | null): 'default' | 'secondary' | 'destructive' | 'outline' => {
     if (icc === null) return 'outline';
@@ -126,6 +118,15 @@ export function MetricsPanel({ originalData, results, metrics }: MetricsPanelPro
     return 'text-red-600';
   };
 
+  // Format last update time
+  const formatUpdateTime = (timestamp: number): string => {
+    const now = Date.now();
+    const diff = now - timestamp;
+    if (diff < 1000) return 'ahora';
+    if (diff < 60000) return `hace ${Math.floor(diff / 1000)}s`;
+    return `hace ${Math.floor(diff / 60000)}m`;
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -133,12 +134,22 @@ export function MetricsPanel({ originalData, results, metrics }: MetricsPanelPro
           <div className="flex items-center gap-2">
             <BarChart className="h-5 w-5" />
             📊 Métricas de Fiabilidad
+            {isCalculating && (
+              <RefreshCw className="h-4 w-4 animate-spin text-blue-500" />
+            )}
           </div>
-          {calculatedMetrics.reliabilityMet && (
-            <Badge variant="default" className="text-green-600">
-              ✅ Fiable
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {calculatedMetrics.reliabilityMet && (
+              <Badge variant="default" className="text-green-600">
+                ✅ Fiable
+              </Badge>
+            )}
+            {results.length > 0 && (
+              <div className="text-xs text-gray-500">
+                Act: {formatUpdateTime(lastUpdateTime)}
+              </div>
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">

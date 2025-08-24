@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
-import { Play, Square, Clock, Activity, AlertCircle } from 'lucide-react';
+import { Play, Square, Clock, Activity, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { useSSE } from '@/hooks/useSSE';
 import { startEvaluation } from '@/services/api';
 import type { CSVRow, APIResponse, ProcessingState } from '@/types/app';
@@ -38,13 +38,45 @@ export function ProcessingController({
 }: ProcessingControllerProps) {
   const [error, setError] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<number | null>(null);
-
+  const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'reconnecting'>('disconnected');
+  const [lastActivityTime, setLastActivityTime] = useState<number>(Date.now());
+  const [processingRate, setProcessingRate] = useState<number | null>(null);
+  
   const sseUrl = processing.jobId ? `${endpointUrl}/stream/${processing.jobId}` : null;
+  const activityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const rateCalculationRef = useRef<{ times: number[], counts: number[] }>({ times: [], counts: [] });
 
+  // Enhanced SSE message handler with rate calculation
   const handleSSEMessage = useCallback((data: unknown) => {
     const sseData = data as SSEData;
+    const now = Date.now();
+    setLastActivityTime(now);
+    setConnectionStatus('connected');
+    setError(null);
+    
     if (sseData.results) {
       onResultsUpdate(sseData.results);
+      
+      // Calculate processing rate
+      const newCount = sseData.progress?.completed || 0;
+      const rateData = rateCalculationRef.current;
+      rateData.times.push(now);
+      rateData.counts.push(newCount);
+      
+      // Keep only last 5 measurements for rate calculation
+      if (rateData.times.length > 5) {
+        rateData.times.shift();
+        rateData.counts.shift();
+      }
+      
+      // Calculate rate if we have at least 2 measurements
+      if (rateData.times.length >= 2 && startTime) {
+        const timeSpan = (rateData.times[rateData.times.length - 1] - rateData.times[0]) / 1000;
+        const itemsSpan = rateData.counts[rateData.counts.length - 1] - rateData.counts[0];
+        if (timeSpan > 0 && itemsSpan > 0) {
+          setProcessingRate(itemsSpan / timeSpan);
+        }
+      }
     }
 
     if (sseData.progress) {
@@ -66,16 +98,22 @@ export function ProcessingController({
     }
   }, [onResultsUpdate, onProcessingStateChange, startTime]);
 
+  // Enhanced SSE error handler
   const handleSSEError = useCallback((error: Event | string) => {
     console.error('SSE Error:', error);
+    setConnectionStatus('reconnecting');
     setError('Conexión perdida. Intentando reconectar...');
     
-    onProcessingStateChange({
-      isActive: false,
-    });
-  }, [onProcessingStateChange]);
+    // Don't stop processing immediately, let the SSE hook handle reconnection
+    // Only stop if reconnection fails completely
+  }, []);
 
+  // Enhanced SSE complete handler
   const handleSSEComplete = useCallback(() => {
+    setConnectionStatus('disconnected');
+    setProcessingRate(null);
+    rateCalculationRef.current = { times: [], counts: [] };
+    
     onProcessingStateChange({
       isActive: false,
       timeRemaining: 0,
@@ -85,11 +123,55 @@ export function ProcessingController({
     onComplete();
   }, [onProcessingStateChange, onComplete]);
 
-  useSSE(sseUrl, {
+  // Enhanced SSE hook usage with connection status tracking
+  const sseState = useSSE(sseUrl, {
     onBatchComplete: handleSSEMessage,
     onComplete: handleSSEComplete,
     onError: handleSSEError,
+    onOpen: () => {
+      setConnectionStatus('connected');
+      setError(null);
+    },
+    onClose: () => {
+      setConnectionStatus('disconnected');
+    },
   });
+
+  // Monitor connection status
+  useEffect(() => {
+    if (sseState.isConnecting && connectionStatus !== 'connecting') {
+      setConnectionStatus('connecting');
+    } else if (sseState.isConnected && connectionStatus !== 'connected') {
+      setConnectionStatus('connected');
+      setError(null);
+    } else if (sseState.error && connectionStatus === 'connected') {
+      setConnectionStatus('reconnecting');
+      setError(sseState.error);
+    }
+  }, [sseState.isConnecting, sseState.isConnected, sseState.error, connectionStatus]);
+
+  // Activity timeout monitoring
+  useEffect(() => {
+    if (processing.isActive && connectionStatus === 'connected') {
+      if (activityTimeoutRef.current) {
+        clearTimeout(activityTimeoutRef.current);
+      }
+      
+      // Set timeout for 30 seconds of inactivity
+      activityTimeoutRef.current = setTimeout(() => {
+        const timeSinceLastActivity = Date.now() - lastActivityTime;
+        if (timeSinceLastActivity > 30000) { // 30 seconds
+          setError('Sin actividad por 30+ segundos. Posible problema de conexión.');
+        }
+      }, 31000);
+    }
+
+    return () => {
+      if (activityTimeoutRef.current) {
+        clearTimeout(activityTimeoutRef.current);
+      }
+    };
+  }, [processing.isActive, connectionStatus, lastActivityTime]);
 
   const calculateTimeRemaining = (
     startTime: number | null,
@@ -119,6 +201,10 @@ export function ProcessingController({
   };
 
   const getProcessingRate = (): string => {
+    if (processingRate !== null) {
+      return `${processingRate.toFixed(1)} items/seg`;
+    }
+    
     if (!startTime || processing.progress.completed === 0) return '-';
 
     const elapsed = (Date.now() - startTime) / 1000;
@@ -131,8 +217,13 @@ export function ProcessingController({
     if (!endpointUrl || data.length === 0) return;
 
     try {
+      // Reset all state for new processing
       setError(null);
       setStartTime(Date.now());
+      setLastActivityTime(Date.now());
+      setProcessingRate(null);
+      setConnectionStatus('connecting');
+      rateCalculationRef.current = { times: [], counts: [] };
       
       onProcessingStateChange({
         isActive: true,
@@ -149,6 +240,7 @@ export function ProcessingController({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(`Error al iniciar procesamiento: ${errorMessage}`);
+      setConnectionStatus('disconnected');
       
       onProcessingStateChange({
         isActive: false,
@@ -158,15 +250,24 @@ export function ProcessingController({
   };
 
   const handleStopProcessing = () => {
+    // Reset all processing state
+    setConnectionStatus('disconnected');
+    setProcessingRate(null);
+    setStartTime(null);
+    setError(null);
+    setLastActivityTime(Date.now());
+    rateCalculationRef.current = { times: [], counts: [] };
+    
+    if (activityTimeoutRef.current) {
+      clearTimeout(activityTimeoutRef.current);
+    }
+    
     onProcessingStateChange({
       isActive: false,
       jobId: null,
       progress: { completed: 0, total: 0, percentage: 0 },
       timeRemaining: null,
     });
-    
-    setStartTime(null);
-    setError(null);
   };
 
   const canStart = !processing.isActive && data.length > 0 && endpointUrl.trim() !== '';
@@ -174,9 +275,21 @@ export function ProcessingController({
 
   const getStatusBadge = () => {
     if (processing.isActive) {
-      return <Badge variant="default" className="flex items-center gap-1">
-        <Activity className="h-3 w-3" />
-        Procesando
+      const connectionIcon = connectionStatus === 'connected' ? 
+        <Wifi className="h-3 w-3" /> : 
+        connectionStatus === 'connecting' || connectionStatus === 'reconnecting' ? 
+        <Activity className="h-3 w-3 animate-spin" /> :
+        <WifiOff className="h-3 w-3" />;
+        
+      const variant = connectionStatus === 'connected' ? "default" : "secondary";
+      const statusText = connectionStatus === 'connected' ? "Procesando" :
+                        connectionStatus === 'connecting' ? "Conectando..." :
+                        connectionStatus === 'reconnecting' ? "Reconectando..." :
+                        "Sin conexión";
+      
+      return <Badge variant={variant} className="flex items-center gap-1">
+        {connectionIcon}
+        {statusText}
       </Badge>;
     }
     
@@ -236,7 +349,7 @@ export function ProcessingController({
         )}
 
         {/* Control Buttons */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
             onClick={handleStartProcessing}
             disabled={!canStart}
@@ -256,6 +369,19 @@ export function ProcessingController({
               Detener
             </Button>
           )}
+
+          {/* Manual reconnect button when connection is lost */}
+          {processing.isActive && (connectionStatus === 'reconnecting' || error) && (
+            <Button
+              onClick={() => sseState.reconnect?.()}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1"
+            >
+              <Wifi className="h-3 w-3" />
+              Reconectar
+            </Button>
+          )}
         </div>
 
         {/* Status Information */}
@@ -266,6 +392,23 @@ export function ProcessingController({
               {processing.isActive ? 'Activo' : 'Inactivo'}
             </span>
           </div>
+          
+          {processing.isActive && (
+            <div className="flex justify-between">
+              <span>Conexión:</span>
+              <span className={
+                connectionStatus === 'connected' ? 'text-green-600' :
+                connectionStatus === 'connecting' ? 'text-blue-600' :
+                connectionStatus === 'reconnecting' ? 'text-yellow-600' :
+                'text-red-600'
+              }>
+                {connectionStatus === 'connected' ? '🟢 Conectado' :
+                 connectionStatus === 'connecting' ? '🔵 Conectando...' :
+                 connectionStatus === 'reconnecting' ? '🟡 Reconectando...' :
+                 '🔴 Desconectado'}
+              </span>
+            </div>
+          )}
           
           {processing.jobId && (
             <div className="flex justify-between">
@@ -285,6 +428,14 @@ export function ProcessingController({
               {endpointUrl || 'No configurado'}
             </span>
           </div>
+
+          {/* SSE Debug Info */}
+          {processing.isActive && sseState.reconnectCount > 0 && (
+            <div className="flex justify-between">
+              <span>Reconexiones:</span>
+              <span className="text-yellow-600">{sseState.reconnectCount}</span>
+            </div>
+          )}
         </div>
 
         {!canStart && !processing.isActive && (

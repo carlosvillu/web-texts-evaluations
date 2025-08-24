@@ -5,17 +5,15 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Download, FileText, Check, AlertCircle } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
-import { calculateMedian } from '@/services/metrics';
 import { formatTimestamp } from '@/utils/formatters';
-import type { CSVRow, APIResponse } from '@/types/app';
 
 interface ResultsExporterProps {
-  originalData: CSVRow[];
-  results: APIResponse[];
-  isProcessingComplete: boolean;
+  data: Record<string, unknown>[]; // Merged data from combineDataWithResults
+  isProcessing: boolean;
 }
 
-interface EnrichedResult extends CSVRow {
+interface EnrichedResult {
+  [key: string]: unknown;
   evaluacion_modelo: number;
   mediana_humana: number | null;
   desviacion: number | null;
@@ -24,48 +22,24 @@ interface EnrichedResult extends CSVRow {
   timestamp_exportacion: string;
 }
 
-export function ResultsExporter({ originalData, results, isProcessingComplete }: ResultsExporterProps) {
+export function ResultsExporter({ data, isProcessing }: ResultsExporterProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [exportSuccess, setExportSuccess] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
 
-  const generateEnrichedData = (): EnrichedResult[] => {
-    const enrichedData: EnrichedResult[] = [];
+  const generateExportData = (): EnrichedResult[] => {
     const timestamp = formatTimestamp(new Date());
-
-    originalData.forEach((originalRow) => {
-      const result = results.find(r => r.id_alumno === originalRow.id_participante);
-      
-      if (result) {
-        // Has model evaluation
-        const mediana = calculateMedian(originalRow);
-        const desviacion = mediana !== null ? Math.abs(result.nota - mediana) : null;
-
-        enrichedData.push({
-          ...originalRow,
-          evaluacion_modelo: result.nota,
-          mediana_humana: mediana,
-          desviacion,
-          confianza: result.confianza,
-          tiempo_procesamiento: result.tiempo_procesamiento,
-          timestamp_exportacion: timestamp,
-        });
-      } else {
-        // No model evaluation yet
-        const mediana = calculateMedian(originalRow);
-
-        enrichedData.push({
-          ...originalRow,
-          evaluacion_modelo: -1, // Indicates not processed
-          mediana_humana: mediana,
-          desviacion: null,
-          timestamp_exportacion: timestamp,
-        });
-      }
-    });
-
-    return enrichedData;
+    
+    return data.map(row => ({
+      ...row,
+      timestamp_exportacion: timestamp,
+      // Ensure proper formatting for missing values
+      evaluacion_modelo: (typeof row.nota === 'number' ? row.nota : 
+                         typeof row.evaluacion_modelo === 'number' ? row.evaluacion_modelo : -1),
+      mediana_humana: (typeof row.mediana_humana === 'number' ? row.mediana_humana : null),
+      desviacion: (typeof row.desviacion === 'number' ? row.desviacion : null),
+    })) as EnrichedResult[];
   };
 
   const convertToCSV = (data: EnrichedResult[]): string => {
@@ -120,11 +94,11 @@ export function ResultsExporter({ originalData, results, isProcessingComplete }:
       setExportProgress(20);
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      const enrichedData = generateEnrichedData();
+      const exportData = generateExportData();
       setExportProgress(60);
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      const csvContent = convertToCSV(enrichedData);
+      const csvContent = convertToCSV(exportData);
       setExportProgress(80);
       await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -134,7 +108,7 @@ export function ResultsExporter({ originalData, results, isProcessingComplete }:
       downloadCSV(csvContent, filename);
       setExportProgress(100);
 
-      setExportSuccess(`✅ Exportado: ${filename} (${enrichedData.length} filas)`);
+      setExportSuccess(`✅ Exportado: ${filename} (${exportData.length} filas)`);
       
       // Reset progress after 3 seconds
       setTimeout(() => {
@@ -151,14 +125,17 @@ export function ResultsExporter({ originalData, results, isProcessingComplete }:
   };
 
   const getExportStats = () => {
-    const processedCount = results.length;
-    const unprocessedCount = originalData.length - processedCount;
-    const completionPercentage = originalData.length > 0 
-      ? Math.round((processedCount / originalData.length) * 100) 
+    const processedCount = data.filter(row => 
+      (row.nota !== undefined && row.nota !== null) || 
+      (row.evaluacion_modelo !== undefined && row.evaluacion_modelo !== null && row.evaluacion_modelo !== -1)
+    ).length;
+    const unprocessedCount = data.length - processedCount;
+    const completionPercentage = data.length > 0 
+      ? Math.round((processedCount / data.length) * 100) 
       : 0;
 
     return {
-      totalRows: originalData.length,
+      totalRows: data.length,
       processedCount,
       unprocessedCount,
       completionPercentage,
@@ -166,8 +143,8 @@ export function ResultsExporter({ originalData, results, isProcessingComplete }:
   };
 
   const stats = getExportStats();
-  const canExport = originalData.length > 0;
-  const hasResults = results.length > 0;
+  const canExport = data.length > 0;
+  const hasResults = stats.processedCount > 0;
 
   return (
     <Card className="w-full">
@@ -250,10 +227,10 @@ export function ResultsExporter({ originalData, results, isProcessingComplete }:
             <li>✅ Timestamp de exportación</li>
           </ul>
           
-          {!isProcessingComplete && (
+          {isProcessing && stats.unprocessedCount > 0 && (
             <div className="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm">
               <p className="text-yellow-800">
-                ⚠️ El procesamiento aún no está completo. Las filas no procesadas 
+                ⚠️ El procesamiento aún está en curso. Las filas no procesadas 
                 tendrán evaluacion_modelo = -1
               </p>
             </div>
@@ -263,12 +240,12 @@ export function ResultsExporter({ originalData, results, isProcessingComplete }:
         {/* Export Button */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {isProcessingComplete && (
+            {stats.completionPercentage === 100 && (
               <Badge variant="default" className="text-green-600">
                 ✅ Procesamiento Completo
               </Badge>
             )}
-            {hasResults && !isProcessingComplete && (
+            {hasResults && isProcessing && (
               <Badge variant="outline">
                 ⏳ Procesamiento en Curso
               </Badge>
