@@ -18,6 +18,7 @@ export function ConfigurationSection({ config, onConfigChange }: ConfigurationSe
   const [tempUrl, setTempUrl] = useState(config.endpoint);
   const [isValidUrl, setIsValidUrl] = useState(false);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   useEffect(() => {
     setTempUrl(config.endpoint);
@@ -26,6 +27,7 @@ export function ConfigurationSection({ config, onConfigChange }: ConfigurationSe
   useEffect(() => {
     const isValid = validateUrl(tempUrl);
     setIsValidUrl(isValid);
+    setConnectionError(null); // Clear error when URL changes
   }, [tempUrl]);
 
   const handleSaveConfig = () => {
@@ -54,6 +56,8 @@ export function ConfigurationSection({ config, onConfigChange }: ConfigurationSe
     if (!isValidUrl) return;
 
     setIsTestingConnection(true);
+    setConnectionError(null);
+    
     try {
       const response = await fetch(tempUrl + '/health', { 
         method: 'GET',
@@ -62,9 +66,24 @@ export function ConfigurationSection({ config, onConfigChange }: ConfigurationSe
       
       if (response.ok) {
         setIsValidUrl(true);
+        setConnectionError(null);
+      } else {
+        setIsValidUrl(false);
+        setConnectionError(`Error del servidor: ${response.status} ${response.statusText}`);
       }
     } catch (error) {
       console.warn('Connection test failed:', error);
+      setIsValidUrl(false);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      
+      if (errorMessage.includes('fetch')) {
+        setConnectionError('No se puede conectar al servidor. Verifica que la URL sea correcta y el servidor esté ejecutándose.');
+      } else if (errorMessage.includes('timeout')) {
+        setConnectionError('Tiempo de conexión agotado. El servidor no responde.');
+      } else {
+        setConnectionError(`Error de conexión: ${errorMessage}`);
+      }
     } finally {
       setIsTestingConnection(false);
     }
@@ -121,6 +140,12 @@ export function ConfigurationSection({ config, onConfigChange }: ConfigurationSe
               <Badge variant={connectionStatus === 'success' ? 'default' : 'destructive'}>
                 {connectionStatus === 'success' ? '✅ URL válida' : '❌ URL inválida'}
               </Badge>
+            </div>
+          )}
+          
+          {connectionError && (
+            <div className="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">
+              {connectionError}
             </div>
           )}
         </div>

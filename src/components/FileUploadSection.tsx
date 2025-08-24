@@ -18,6 +18,8 @@ interface ParseResult {
   totalRows: number;
   validColumns: string[];
   missingColumns: string[];
+  warnings?: string[];
+  errors?: string[];
 }
 
 export function FileUploadSection({ separator, onDataLoaded, isLoading = false }: FileUploadSectionProps) {
@@ -58,6 +60,8 @@ export function FileUploadSection({ separator, onDataLoaded, isLoading = false }
         totalRows: result.metadata.totalRows,
         validColumns,
         missingColumns: [],
+        warnings: result.warnings,
+        errors: result.errors,
       };
 
       setParseResult(parseResult);
@@ -184,7 +188,7 @@ export function FileUploadSection({ separator, onDataLoaded, isLoading = false }
               <div>
                 <p className="font-medium">✅ Archivo procesado correctamente</p>
                 <p className="text-sm">
-                  {fileName} - {parseResult.totalRows} filas encontradas
+                  {fileName} - {parseResult.totalRows} filas encontradas, {parseResult.data.length} filas válidas
                 </p>
               </div>
             </Alert>
@@ -207,6 +211,21 @@ export function FileUploadSection({ separator, onDataLoaded, isLoading = false }
                 ))}
               </div>
             </div>
+
+            {/* Warnings Display */}
+            {parseResult.warnings && parseResult.warnings.length > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+                <p className="text-sm font-medium text-amber-800 mb-2">Advertencias:</p>
+                <ul className="text-sm text-amber-700 space-y-1">
+                  {parseResult.warnings.map((warning, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <span className="text-amber-500 mt-0.5">•</span>
+                      <span>{warning}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Preview Table */}
             <div className="border rounded-md overflow-hidden">

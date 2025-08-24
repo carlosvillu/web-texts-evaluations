@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
 import { Play, Square, Clock, Activity, AlertCircle, Wifi, WifiOff } from 'lucide-react';
-import { useSSE } from '@/hooks/useSSE';
+import { useProcessingSSE } from '@/hooks/useSSE';
 import { startEvaluation } from '@/services/api';
 import type { CSVRow, APIResponse, ProcessingState } from '@/types/app';
 
@@ -18,15 +18,6 @@ interface ProcessingControllerProps {
   onComplete: () => void;
 }
 
-interface SSEData {
-  results?: APIResponse[];
-  progress?: {
-    completed: number;
-    total: number;
-  };
-  message?: string;
-  error?: string;
-}
 
 export function ProcessingController({
   data,
@@ -46,22 +37,22 @@ export function ProcessingController({
   const activityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const rateCalculationRef = useRef<{ times: number[], counts: number[] }>({ times: [], counts: [] });
 
-  // Enhanced SSE message handler with rate calculation
-  const handleSSEMessage = useCallback((data: unknown) => {
-    const sseData = data as SSEData;
+  // Handle SSE progress updates - simplified with useProcessingSSE
+  const handleProgress = useCallback((progress: { completed: number; total: number; results: unknown[] }) => {
+    console.log("🎯 ProcessingController handleProgress called with:", progress);
     const now = Date.now();
     setLastActivityTime(now);
     setConnectionStatus('connected');
     setError(null);
     
-    if (sseData.results) {
-      onResultsUpdate(sseData.results);
+    // Update results
+    if (progress.results && progress.results.length > 0) {
+      onResultsUpdate(progress.results as APIResponse[]);
       
       // Calculate processing rate
-      const newCount = sseData.progress?.completed || 0;
       const rateData = rateCalculationRef.current;
       rateData.times.push(now);
-      rateData.counts.push(newCount);
+      rateData.counts.push(progress.completed);
       
       // Keep only last 5 measurements for rate calculation
       if (rateData.times.length > 5) {
@@ -79,36 +70,32 @@ export function ProcessingController({
       }
     }
 
-    if (sseData.progress) {
-      const percentage = Math.round((sseData.progress.completed / sseData.progress.total) * 100);
-      const timeRemaining = calculateTimeRemaining(
-        startTime,
-        sseData.progress.completed,
-        sseData.progress.total
-      );
+    // Update progress
+    const percentage = Math.round((progress.completed / progress.total) * 100);
+    const timeRemaining = calculateTimeRemaining(
+      startTime,
+      progress.completed,
+      progress.total
+    );
 
-      onProcessingStateChange({
-        progress: {
-          completed: sseData.progress.completed,
-          total: sseData.progress.total,
-          percentage,
-        },
-        timeRemaining,
-      });
-    }
+    onProcessingStateChange({
+      progress: {
+        completed: progress.completed,
+        total: progress.total,
+        percentage,
+      },
+      timeRemaining,
+    });
   }, [onResultsUpdate, onProcessingStateChange, startTime]);
 
-  // Enhanced SSE error handler
-  const handleSSEError = useCallback((error: Event | string) => {
+  // Handle SSE errors
+  const handleSSEError = useCallback((error: string) => {
     console.error('SSE Error:', error);
     setConnectionStatus('reconnecting');
-    setError('Conexión perdida. Intentando reconectar...');
-    
-    // Don't stop processing immediately, let the SSE hook handle reconnection
-    // Only stop if reconnection fails completely
+    setError(error);
   }, []);
 
-  // Enhanced SSE complete handler
+  // Handle SSE completion
   const handleSSEComplete = useCallback(() => {
     setConnectionStatus('disconnected');
     setProcessingRate(null);
@@ -123,32 +110,38 @@ export function ProcessingController({
     onComplete();
   }, [onProcessingStateChange, onComplete]);
 
-  // Enhanced SSE hook usage with connection status tracking
-  const sseState = useSSE(sseUrl, {
-    onBatchComplete: handleSSEMessage,
-    onComplete: handleSSEComplete,
-    onError: handleSSEError,
-    onOpen: () => {
-      setConnectionStatus('connected');
-      setError(null);
-    },
-    onClose: () => {
-      setConnectionStatus('disconnected');
-    },
+  // Use specialized processing SSE hook
+  console.log("🚀 ProcessingController initializing useProcessingSSE with:", {
+    jobId: processing.jobId,
+    endpointUrl,
+    hasHandleProgress: !!handleProgress
   });
+  
+  const sseState = useProcessingSSE(
+    processing.jobId,
+    endpointUrl,
+    handleProgress,
+    handleSSEComplete,
+    handleSSEError
+  );
 
-  // Monitor connection status
+  // Monitor connection status from useProcessingSSE
   useEffect(() => {
-    if (sseState.isConnecting && connectionStatus !== 'connecting') {
-      setConnectionStatus('connecting');
-    } else if (sseState.isConnected && connectionStatus !== 'connected') {
-      setConnectionStatus('connected');
-      setError(null);
-    } else if (sseState.error && connectionStatus === 'connected') {
-      setConnectionStatus('reconnecting');
-      setError(sseState.error);
+    if (processing.jobId) {
+      if (sseState.isConnecting && connectionStatus !== 'connecting') {
+        setConnectionStatus('connecting');
+        setError(null);
+      } else if (sseState.isConnected && connectionStatus !== 'connected') {
+        setConnectionStatus('connected');
+        setError(null);
+      } else if (sseState.error) {
+        setConnectionStatus('reconnecting');
+        setError(sseState.error);
+      }
+    } else {
+      setConnectionStatus('disconnected');
     }
-  }, [sseState.isConnecting, sseState.isConnected, sseState.error, connectionStatus]);
+  }, [sseState.isConnecting, sseState.isConnected, sseState.error, connectionStatus, processing.jobId]);
 
   // Activity timeout monitoring
   useEffect(() => {
